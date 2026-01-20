@@ -1,3 +1,5 @@
+import mysql
+
 from database.DB_connect import ConnessioneDB
 from model.artefattoDTO import Artefatto
 
@@ -10,4 +12,68 @@ class ArtefattoDAO:
     def __init__(self):
         pass
 
-    # TODO
+    @staticmethod
+    def get_epoche() -> list[str] | None:
+
+        cnx = ConnessioneDB.get_connection()
+        result = []
+
+        if cnx is None:
+            print("Errore cnx get_epoche()")
+            return None
+
+        cursor = cnx.cursor(dictionary=True)
+        query = """SELECT DISTINCT epoca
+                   FROM artefatto"""
+
+        try:
+            cursor.execute(query)
+            for row in cursor:
+                result.append(row["epoca"])
+        except Exception as e:
+            print(f"Errore query get_epoche(): {e}")
+        finally:
+            cursor.close()
+            cnx.close()
+
+        return result
+
+    @staticmethod
+    def get_artefatto_filtrato(museo: str, epoca: str) -> list[Artefatto] | None:
+
+        cnx = ConnessioneDB.get_connection()
+        result = []
+
+        if cnx is None:
+            print("Errore cnx get_artefatto_filtrato()")
+            return None
+
+        cursor = cnx.cursor(dictionary=True)
+        query = """ SELECT a.*
+                    FROM artefatto a, museo m 
+                    WHERE m.nome = COALESCE(%s, m.nome) AND a.epoca = COALESCE(%s, a.epoca)
+                          AND a.id_museo = m.id 
+                """
+
+        try:
+            cursor.execute(query, (museo, epoca,))
+            for row in cursor:
+                artefatto = Artefatto(id = row["id"],
+                                      nome = row["nome"],
+                                      tipologia = row["epoca"],
+                                      epoca = row["epoca"],
+                                      id_museo = row["id_museo"])
+                result.append(artefatto)
+        except Exception as e:
+            print(f"Errore query get_artefatto_filtrato(): {e}")
+        finally:
+            cursor.close()
+            cnx.close()
+
+        return result
+
+
+
+
+
+
